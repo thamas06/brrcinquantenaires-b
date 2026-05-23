@@ -34,7 +34,7 @@ echo "==> Génération de la clé application..."
 # ✅ 3. Vider les anciens caches
 echo "==> Nettoyage du cache..."
 php artisan config:clear
-php artisan cache:clear
+php artisan optimize:clear || true
 php artisan route:clear
 php artisan view:clear
 

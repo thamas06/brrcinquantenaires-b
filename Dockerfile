@@ -33,6 +33,9 @@ WORKDIR /var/www/html
 # Copier projet
 COPY . .
 
+RUN mkdir -p storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 # ✅ IMPORTANT : créer dossiers Laravel nécessaires
 RUN mkdir -p storage bootstrap/cache
 
