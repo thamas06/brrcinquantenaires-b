@@ -29,7 +29,7 @@ echo "✅ Connexion PostgreSQL OK"
 
 # ✅ 2. Générer la clé app si absente
 echo "==> Génération de la clé application..."
-php artisan key:generate --force
+
 
 # ✅ 3. Vider les anciens caches
 echo "==> Nettoyage du cache..."
