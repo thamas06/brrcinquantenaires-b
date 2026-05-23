@@ -1,6 +1,6 @@
 FROM php:8.2-fpm
 
-# Installer dépendances système, nginx et supervisor
+# Installer dépendances système
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -20,38 +20,44 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Configurer et installer extensions PHP
+# Extensions PHP
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd xml zip
 
-# Installer Composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Dossier du projet
+# Dossier projet
 WORKDIR /var/www/html
 
-# Copier le projet
+# Copier projet
 COPY . .
 
-# Créer .env de base si absent
-RUN cp .env.example .env
+# ✅ IMPORTANT : créer dossiers Laravel nécessaires
+RUN mkdir -p storage bootstrap/cache
 
-# Copier les configs Docker
+# ❌ NE PAS copier .env (Render gère les variables d’environnement)
+# RUN cp .env.example .env
+
+# Config supervisor
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Start script
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-# Copier la config nginx
+# Nginx config
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Installer les dépendances PHP
-RUN composer install --optimize-autoloader --no-dev --no-interaction --no-plugins
+# Installer dépendances PHP
+RUN composer install --optimize-autoloader --no-dev --no-interaction
 
-# ✅ Permissions correctes pour Laravel
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# ✅ Permissions correctes Laravel (IMPORTANT)
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
-# Exposer le port Render
+# Exposer port Render
 EXPOSE 10000
 
+# Lancer le serveur
 CMD ["/usr/local/bin/start.sh"]
