@@ -15,11 +15,13 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     supervisor \
-    nginx
+    nginx \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Configurer et installer extensions PHP courantes requises par Laravel
+# Configurer et installer extensions PHP
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd xml zip
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd xml zip
 
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -27,22 +29,28 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Dossier du projet
 WORKDIR /var/www/html
 
-# Copier le projet (y compris docker/) dans l'image
+# Copier le projet
 COPY . .
 
-# Copier la configuration supervisor et le script de démarrage
+# Créer .env de base si absent
+RUN cp .env.example .env
+
+# Copier les configs Docker
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-# Copier la configuration nginx dans le dossier de conf
+# Copier la config nginx
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Installer les dépendances PHP sans exécuter de commandes artisan au build
+# Installer les dépendances PHP
 RUN composer install --optimize-autoloader --no-dev --no-interaction --no-plugins
 
-# Exposer le port (Render fournira la variable d'environnement $PORT au runtime)
+# ✅ Permissions correctes pour Laravel
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Exposer le port Render
 EXPOSE 10000
 
-# Utiliser le script de démarrage qui gère key:generate, migrations et démarrage des services
 CMD ["/usr/local/bin/start.sh"]
