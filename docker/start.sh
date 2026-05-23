@@ -46,22 +46,31 @@ php artisan config:cache
 echo "==> Lancement des migrations..."
 php artisan migrate --force
 
-# ✅ 6. Seeder - vérification propre sans tinker
+# ✅ 6. Seeder
 echo "==> Vérification des seeders..."
-USER_COUNT=$(php artisan db:seed --class=CheckUserSeeder 2>/dev/null || php -r "
-    \$pdo = new PDO(
-        'pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
-        getenv('DB_USERNAME'),
-        getenv('DB_PASSWORD')
-    );
-    echo \$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
-" 2>/dev/null || echo "0")
-
-if [ "$USER_COUNT" = "0" ]; then
-    echo "==> Lancement du seeder..."
+if [ "$FORCE_SEED" = "true" ]; then
+    echo "==> FORCE_SEED activé - lancement du seeder..."
     php artisan db:seed --force
 else
-    echo "==> Seeder ignoré (utilisateurs déjà présents)"
+    USER_COUNT=$(php -r "
+        try {
+            \$pdo = new PDO(
+                'pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
+                getenv('DB_USERNAME'),
+                getenv('DB_PASSWORD')
+            );
+            echo \$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        } catch(Exception \$e) {
+            echo '0';
+        }
+    " 2>/dev/null || echo "0")
+    echo "==> Nombre d'utilisateurs: $USER_COUNT"
+    if [ "$USER_COUNT" = "0" ]; then
+        echo "==> Lancement du seeder..."
+        php artisan db:seed --force
+    else
+        echo "==> Seeder ignoré (utilisateurs déjà présents)"
+    fi
 fi
 
 # ✅ 7. Optimiser pour la production
