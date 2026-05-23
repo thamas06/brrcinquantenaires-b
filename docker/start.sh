@@ -6,12 +6,12 @@ cd /var/www/html
 echo "==> Démarrage de l'application Laravel..."
 
 # ✅ 1. Vérifier la connexion à la base de données avant tout
-echo "==> Vérification de la connexion à MySQL (Railway)..."
+echo "==> Vérification de la connexion à PostgreSQL..."
 MAX_TRIES=10
 COUNT=0
 until php artisan db:monitor 2>/dev/null || php -r "
     \$pdo = new PDO(
-        'mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
+        'pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
         getenv('DB_USERNAME'),
         getenv('DB_PASSWORD')
     );
@@ -19,13 +19,13 @@ until php artisan db:monitor 2>/dev/null || php -r "
 " 2>/dev/null | grep -q "OK"; do
     COUNT=$((COUNT + 1))
     if [ $COUNT -ge $MAX_TRIES ]; then
-        echo "❌ Impossible de se connecter à MySQL après $MAX_TRIES tentatives"
+        echo "❌ Impossible de se connecter à PostgreSQL après $MAX_TRIES tentatives"
         exit 1
     fi
     echo "  Tentative $COUNT/$MAX_TRIES - attente 3s..."
     sleep 3
 done
-echo "✅ Connexion MySQL OK"
+echo "✅ Connexion PostgreSQL OK"
 
 # ✅ 2. Générer la clé app si absente
 echo "==> Génération de la clé application..."
@@ -50,7 +50,7 @@ php artisan migrate --force
 echo "==> Vérification des seeders..."
 USER_COUNT=$(php artisan db:seed --class=CheckUserSeeder 2>/dev/null || php -r "
     \$pdo = new PDO(
-        'mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
+        'pgsql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
         getenv('DB_USERNAME'),
         getenv('DB_PASSWORD')
     );
