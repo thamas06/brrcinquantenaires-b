@@ -51,19 +51,22 @@ class ProductController extends Controller
         // manager: must provide source_product_id to copy prices, cannot set prices or stock
         if($user->role === 'manager'){
             $data = $request->validate([
-                'source_product_id' => 'required|integer|exists:products,id',
+                'name'                 => 'required|string',
+                'purchase_price'       => 'numeric|min:0',
+                'cost_price'           => 'numeric|min:0',
+                'sale_price'           => 'numeric|min:0',
+                'stock'                => 'integer|min:0',
                 'declared_for_user_id' => 'nullable|integer'
             ]);
-            $src = Product::findOrFail($data['source_product_id']);
+            $profit = ($data['sale_price'] ?? 0) - ($data['cost_price'] ?? 0);
             $new = Product::create([
-                'name' => $src->name,
-                'purchase_price' => $src->purchase_price,
-                'cost_price' => $src->cost_price,
-                'sale_price' => $src->sale_price,
-                'profit' => $src->profit,
-                // explicit zero stock for copied product
-                'stock' => 0,
-                'declared_by_user_id' => $user->id,
+                'name'                 => $data['name'],
+                'purchase_price'       => $data['purchase_price'] ?? 0,
+                'cost_price'           => $data['cost_price'] ?? 0,
+                'sale_price'           => $data['sale_price'] ?? 0,
+                'profit'               => $profit,
+                'stock'                => $data['stock'] ?? 0,
+                'declared_by_user_id'  => $user->id,
                 'declared_for_user_id' => $data['declared_for_user_id'] ?? null,
             ]);
             return response()->json($new, 201);
