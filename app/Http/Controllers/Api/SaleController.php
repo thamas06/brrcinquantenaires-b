@@ -54,6 +54,16 @@ class SaleController extends Controller
 
     public function index(Request $request)
     {
-        return Sale::with('product')->get();
+        $user = $request->user();
+
+        // Admin et manager voient toutes les ventes
+        if (in_array($user->role, ['admin', 'manager'])) {
+            return Sale::with('product')->get();
+        }
+
+        // Caissier/employé : voit uniquement ses propres ventes
+        return Sale::with('product')
+            ->where('employee_id', $user->id)
+            ->get();
     }
 }

@@ -11,7 +11,17 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        return Product::with('sales')->get();
+        $user = $request->user();
+
+        // Admin et manager voient tous les produits
+        if (in_array($user->role, ['admin', 'manager'])) {
+            return Product::with('sales')->get();
+        }
+
+        // Caissier/employé : voit uniquement les produits assignés à lui
+        return Product::with('sales')
+            ->where('declared_for_user_id', $user->id)
+            ->get();
     }
 
     public function store(Request $request)
