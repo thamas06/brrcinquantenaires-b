@@ -12,7 +12,7 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if(!in_array($user->role, ['admin','manager','caissier'])){
+        if(!in_array($user->role, ['admin','manager','caissier','employee'])){
             return response()->json(['message'=>'Forbidden'], 403);
         }
 
@@ -25,31 +25,33 @@ class SaleController extends Controller
         $product = Product::findOrFail($data['product_id']);
         $qty = $data['qty'];
 
-        // ensure sufficient stock
         if($product->stock < $qty){
-            return response()->json(['message' => 'Insufficient stock'], 400);
+            return response()->json(['message' => 'Stock insuffisant'], 400);
         }
 
-        // compute prices and profits
         $unitPrice = $product->sale_price;
         $unitProfit = $product->profit;
         $totalSale = $unitPrice * $qty;
         $totalProfit = $unitProfit * $qty;
 
-        // decrement stock and persist
         $product->stock -= $qty;
         $product->save();
 
+        // Forcer employee_id à l'utilisateur connecté pour caissier/employee
+        $employeeId = in_array($user->role, ['caissier', 'employee'])
+            ? $user->id
+            : ($data['employee_id'] ?? $user->id);
+
         $sale = Sale::create([
-            'product_id' => $product->id,
-            'employee_id' => $data['employee_id'] ?? null,
-            'qty' => $qty,
-            'unit_price' => $unitPrice,
-            'total_sale' => $totalSale,
+            'product_id'   => $product->id,
+            'employee_id'  => $employeeId,
+            'qty'          => $qty,
+            'unit_price'   => $unitPrice,
+            'total_sale'   => $totalSale,
             'total_profit' => $totalProfit,
         ]);
 
-        return response()->json($sale, 201);
+        return response()->json($sale->load('product'), 201);
     }
 
     public function index(Request $request)
