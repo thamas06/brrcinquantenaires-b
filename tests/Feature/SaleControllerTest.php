@@ -39,8 +39,24 @@ class SaleControllerTest extends TestCase
             'qty' => 5,
         ]);
 
-        $res->assertStatus(400)->assertJson(['message' => 'Insufficient stock']);
+        $res->assertStatus(400)->assertJson(['message' => 'Stock insuffisant. Stock disponible: 2']);
         // stock remains unchanged
         $this->assertDatabaseHas('products', ['id' => $product->id, 'stock' => 2]);
+    }
+
+    public function test_cashier_can_assign_sale_to_another_employee()
+    {
+        $cashier = User::factory()->create(['role' => 'caissier']);
+        $employee = User::factory()->create(['role' => 'employee']);
+        $product = Product::create(['name' => 'Widget', 'sale_price' => 10, 'cost_price' => 5, 'stock' => 10, 'profit' => 5]);
+
+        $response = $this->actingAs($cashier, 'sanctum')->postJson('/api/sales', [
+            'product_id' => $product->id,
+            'qty' => 2,
+            'employee_id' => $employee->id,
+        ]);
+
+        $response->assertStatus(201)->assertJsonFragment(['employee_id' => $employee->id, 'qty' => 2]);
+        $this->assertDatabaseHas('sales', ['product_id' => $product->id, 'employee_id' => $employee->id, 'qty' => 2]);
     }
 }

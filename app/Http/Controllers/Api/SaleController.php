@@ -41,34 +41,38 @@ class SaleController extends Controller
             $product->save();
         }
 
-        $employeeId = in_array($user->role, ['caissier', 'employee'])
-            ? $user->id
-            : ($data['employee_id'] ?? $user->id);
+        $employeeId = $data['employee_id'] ?? $user->id;
 
         $sale = Sale::create([
             'product_id'   => $product->id,
             'employee_id'  => $employeeId,
+            'created_by'   => $user->id,
             'qty'          => $qty,
             'unit_price'   => $unitPrice,
             'total_sale'   => $totalSale,
             'total_profit' => $totalProfit,
         ]);
 
-        return response()->json($sale->load(['product', 'employee']), 201);
+        return response()->json($sale->load(['product', 'employee', 'createdBy']), 201);
     }
 
     public function index(Request $request)
     {
         $user = $request->user();
+        $oneYearAgo = now()->subYear();
 
         if (in_array($user->role, ['admin', 'manager'])) {
-            $sales = Sale::with(['product', 'employee'])->orderBy('created_at', 'desc')->get();
+            $sales = Sale::with(['product', 'employee', 'createdBy'])
+                ->where('created_at', '>=', $oneYearAgo)
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else {
-            // Ventes où employee_id = user.id OU ventes sur les produits assignés à cet utilisateur
+            // Ventes où employee_id = user.id OU ventes créées par l'utilisateur OU ventes sur les produits assignés à cet utilisateur
             $assignedProductIds = Product::where('declared_for_user_id', $user->id)->pluck('id');
-            $sales = Sale::with(['product', 'employee'])
+            $sales = Sale::with(['product', 'employee', 'createdBy'])
                 ->where(function($q) use ($user, $assignedProductIds) {
                     $q->where('employee_id', $user->id)
+                      ->orWhere('created_by', $user->id)
                       ->orWhereIn('product_id', $assignedProductIds);
                 })
                 ->orderBy('created_at', 'desc')
@@ -77,16 +81,18 @@ class SaleController extends Controller
 
         return response()->json($sales->map(function($s) {
             return [
-                'id'           => $s->id,
-                'product_id'   => $s->product_id,
-                'employee_id'  => $s->employee_id,
-                'qty'          => (int) $s->qty,
-                'unit_price'   => (float) $s->unit_price,
-                'total_sale'   => (float) $s->total_sale,
-                'total_profit' => (float) $s->total_profit,
-                'created_at'   => $s->created_at,
-                'productName'  => $s->product?->name ?? 'Inconnu',
-                'employeeName' => $s->employee?->name ?? 'N/A',
+                'id'            => $s->id,
+                'product_id'    => $s->product_id,
+                'employee_id'   => $s->employee_id,
+                'created_by'    => $s->created_by,
+                'qty'           => (int) $s->qty,
+                'unit_price'    => (float) $s->unit_price,
+                'total_sale'    => (float) $s->total_sale,
+                'total_profit'  => (float) $s->total_profit,
+                'created_at'    => $s->created_at,
+                'productName'   => $s->product?->name ?? 'Inconnu',
+                'employeeName'  => $s->employee?->name ?? 'N/A',
+                'createdByName' => $s->createdBy?->name ?? 'N/A',
             ];
         }));
     }
@@ -94,14 +100,19 @@ class SaleController extends Controller
     public function stats(Request $request)
     {
         $user = $request->user();
+        $oneYearAgo = now()->subYear();
 
         if (in_array($user->role, ['admin', 'manager'])) {
-            $sales = Sale::with(['product', 'employee'])->orderBy('created_at', 'desc')->get();
+            $sales = Sale::with(['product', 'employee', 'createdBy'])
+                ->where('created_at', '>=', $oneYearAgo)
+                ->orderBy('created_at', 'desc')
+                ->get();
         } else {
             $assignedProductIds = Product::where('declared_for_user_id', $user->id)->pluck('id');
-            $sales = Sale::with(['product', 'employee'])
+            $sales = Sale::with(['product', 'employee', 'createdBy'])
                 ->where(function($q) use ($user, $assignedProductIds) {
                     $q->where('employee_id', $user->id)
+                      ->orWhere('created_by', $user->id)
                       ->orWhereIn('product_id', $assignedProductIds);
                 })
                 ->orderBy('created_at', 'desc')
@@ -131,16 +142,18 @@ class SaleController extends Controller
             'by_employee' => $byEmployee,
             'sales' => $sales->map(function($s) {
                 return [
-                    'id'           => $s->id,
-                    'product_id'   => $s->product_id,
-                    'employee_id'  => $s->employee_id,
-                    'qty'          => (int) $s->qty,
-                    'unit_price'   => (float) $s->unit_price,
-                    'total_sale'   => (float) $s->total_sale,
-                    'total_profit' => (float) $s->total_profit,
-                    'created_at'   => $s->created_at,
-                    'productName'  => $s->product?->name ?? 'Inconnu',
-                    'employeeName' => $s->employee?->name ?? 'N/A',
+                    'id'            => $s->id,
+                    'product_id'    => $s->product_id,
+                    'employee_id'   => $s->employee_id,
+                    'created_by'    => $s->created_by,
+                    'qty'           => (int) $s->qty,
+                    'unit_price'    => (float) $s->unit_price,
+                    'total_sale'    => (float) $s->total_sale,
+                    'total_profit'  => (float) $s->total_profit,
+                    'created_at'    => $s->created_at,
+                    'productName'   => $s->product?->name ?? 'Inconnu',
+                    'employeeName'  => $s->employee?->name ?? 'N/A',
+                    'createdByName' => $s->createdBy?->name ?? 'N/A',
                 ];
             })
         ]);

@@ -9,7 +9,7 @@ class Sale extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['product_id','employee_id','qty','unit_price','total_sale','total_profit'];
+    protected $fillable = ['product_id','employee_id','created_by','qty','unit_price','total_sale','total_profit'];
 
     public function product()
     {
@@ -19,5 +19,10 @@ class Sale extends Model
     public function employee()
     {
         return $this->belongsTo(User::class, 'employee_id');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
