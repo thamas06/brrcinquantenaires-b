@@ -10,37 +10,41 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('sales')->delete();
-        DB::table('products')->delete();
-        DB::table('users')->delete();
+        // Ne pas supprimer les données existantes lors du seed.
+        // Crée uniquement les utilisateurs par défaut manquants.
 
-        // ── UTILISATEURS ──────────────────────────────────────────
-        User::create([
-            'name'     => 'Administrateur',
-            'email'    => 'admin@cinquantenaire.com',
-            'password' => bcrypt('admin123'),
-            'role'     => 'admin',
-        ]);
+        $defaultUsers = [
+            [
+                'name'     => 'Administrateur',
+                'email'    => 'admin@cinquantenaire.com',
+                'password' => bcrypt('admin123'),
+                'role'     => 'admin',
+            ],
+            [
+                'name'     => 'Manager',
+                'email'    => 'manager@cinquantenaire.com',
+                'password' => bcrypt('manager123'),
+                'role'     => 'manager',
+            ],
+            [
+                'name'     => 'Alice',
+                'email'    => 'alice@cinquantenaire.com',
+                'password' => bcrypt('alice123'),
+                'role'     => 'caissier',
+            ],
+            [
+                'name'     => 'Bob',
+                'email'    => 'bob@cinquantenaire.com',
+                'password' => bcrypt('bob123'),
+                'role'     => 'caissier',
+            ],
+        ];
 
-        User::create([
-            'name'     => 'Manager',
-            'email'    => 'manager@cinquantenaire.com',
-            'password' => bcrypt('manager123'),
-            'role'     => 'manager',
-        ]);
-
-        User::create([
-            'name'     => 'Alice',
-            'email'    => 'alice@cinquantenaire.com',
-            'password' => bcrypt('alice123'),
-            'role'     => 'caissier',
-        ]);
-
-        User::create([
-            'name'     => 'Bob',
-            'email'    => 'bob@cinquantenaire.com',
-            'password' => bcrypt('bob123'),
-            'role'     => 'caissier',
-        ]);
+        foreach ($defaultUsers as $userData) {
+            User::firstOrCreate(
+                ['email' => $userData['email']],
+                $userData
+            );
+        }
     }
 }
