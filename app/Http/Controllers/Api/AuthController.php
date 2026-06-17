@@ -96,4 +96,28 @@ class AuthController extends Controller
     {
         return User::select('id','name','email','role')->get();
     }
+
+    public function deleteUser(Request $request, $id)
+    {
+        $actor = $request->user();
+        if (!$actor || $actor->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        // Prevent self-deletion
+        if ((string) $actor->id === (string) $id) {
+            return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte'], 422);
+        }
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur introuvable'], 404);
+        }
+
+        // Revoke all tokens before deleting
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Utilisateur supprimé avec succès']);
+    }
 }

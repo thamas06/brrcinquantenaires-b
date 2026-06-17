@@ -29,3 +29,4 @@ Route::post('/register', [AuthController::class,'register']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class,'logout']);
 Route::middleware('auth:sanctum')->get('/users', [AuthController::class,'users']);
 Route::middleware('auth:sanctum')->post('/users/{id}/role', [AuthController::class,'assignRole']);
+Route::middleware('auth:sanctum')->delete('/users/{id}', [AuthController::class,'deleteUser']);
