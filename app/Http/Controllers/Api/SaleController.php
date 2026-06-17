@@ -41,6 +41,8 @@ class SaleController extends Controller
             $product->save();
         }
 
+        // Si employee_id non fourni, on met l'utilisateur lui-même
+        // Mais si l'utilisateur est caissier, il doit obligatoirement choisir un employé
         $employeeId = $data['employee_id'] ?? $user->id;
 
         $sale = Sale::create([
@@ -93,6 +95,8 @@ class SaleController extends Controller
                 'productName'   => $s->product?->name ?? 'Inconnu',
                 'employeeName'  => $s->employee?->name ?? 'N/A',
                 'createdByName' => $s->createdBy?->name ?? 'N/A',
+                // true si la vente est faite par la personne pour elle-même (pas au nom d'un autre)
+                'is_self_sale'  => $s->employee_id === $s->created_by,
             ];
         }));
     }
