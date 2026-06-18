@@ -58,7 +58,24 @@ class SaleController extends Controller
             'total_profit' => $totalProfit,
         ]);
 
-        return response()->json($sale->load(['product', 'employee', 'createdBy']), 201);
+        // Charger les relations pour avoir les noms
+        $sale->load(['product', 'employee', 'createdBy']);
+
+        return response()->json([
+            'id'            => $sale->id,
+            'product_id'    => $sale->product_id,
+            'employee_id'   => $sale->employee_id,
+            'created_by'    => $sale->created_by,
+            'qty'           => (int) $sale->qty,
+            'unit_price'    => (float) $sale->unit_price,
+            'total_sale'    => (float) $sale->total_sale,
+            'total_profit'  => (float) $sale->total_profit,
+            'created_at'    => $sale->created_at,
+            'productName'   => $sale->product?->name ?? 'Inconnu',
+            'employeeName'  => $sale->employee?->name ?? 'N/A',
+            'createdByName' => $sale->createdBy?->name ?? 'N/A',
+            'is_self_sale'  => $sale->employee_id === $sale->created_by,
+        ], 201);
     }
 
     public function index(Request $request)
