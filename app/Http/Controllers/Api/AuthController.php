@@ -38,7 +38,7 @@ class AuthController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
-            'role' => 'employee'
+            'role' => 'pending'
         ]);
 
         $token = $user->createToken('api-token')->plainTextToken;
@@ -56,19 +56,23 @@ class AuthController extends Controller
         $role = $data['role'];
 
         // allowed roles set
-        $allowedRoles = ['admin','manager','caissier','employee'];
+        $allowedRoles = ['admin','manager','caissier','employee','pending'];
         if(!in_array($role, $allowedRoles)){
             return response()->json(['message'=>'Invalid role'], 422);
         }
 
-        // Permission rules
-        // admin can assign any of manager, caissier, employee
-        // manager can assign caissier and employee
+        // Règles de permission par rôle
         if($actor->role === 'admin'){
-            // ok
+            // L'admin peut assigner n'importe quel rôle
         }elseif($actor->role === 'manager'){
-            if(!in_array($role, ['caissier','employee'])){
+            // Le manager peut assigner caissier, employee ou pending
+            if(!in_array($role, ['caissier','employee','pending'])){
                 return response()->json(['message'=>'Forbidden'],403);
+            }
+        }elseif($actor->role === 'caissier'){
+            // Le caissier peut UNIQUEMENT assigner le rôle employee
+            if($role !== 'employee'){
+                return response()->json(['message'=>'Le caissier peut uniquement assigner le rôle employé'],403);
             }
         }else{
             return response()->json(['message'=>'Forbidden'],403);
@@ -76,6 +80,11 @@ class AuthController extends Controller
 
         $user = User::find($id);
         if(!$user) return response()->json(['message'=>'User not found'],404);
+
+        // Un caissier ne peut assigner que des comptes en attente (pending)
+        if($actor->role === 'caissier' && $user->role !== 'pending'){
+            return response()->json(['message'=>'Vous ne pouvez activer que des comptes en attente de validation'],403);
+        }
 
         $user->role = $role;
         $user->save();

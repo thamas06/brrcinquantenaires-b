@@ -12,6 +12,9 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
+        if($user->role === 'pending'){
+            return response()->json(['message'=>'Compte en attente de validation'], 403);
+        }
         if(!in_array($user->role, ['admin','manager','caissier','employee'])){
             return response()->json(['message'=>'Forbidden'], 403);
         }
