@@ -99,6 +99,18 @@ sed -i "s/listen [0-9]*;/listen ${PORT};/g" /etc/nginx/conf.d/default.conf
 echo "==> Permissions finales..."
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
 
-# ✅ 11. Démarrer Supervisor
+# ✅ 11. Afficher le log Laravel au démarrage pour debug
+echo "==> Vérification Laravel..."
+php artisan --version || true
+php -r "
+    define('LARAVEL_START', microtime(true));
+    require '/var/www/html/vendor/autoload.php';
+    \$app = require_once '/var/www/html/bootstrap/app.php';
+    echo 'Bootstrap OK' . PHP_EOL;
+" 2>&1 || true
+echo "==> Log Laravel (dernières erreurs):"
+cat /var/www/html/storage/logs/laravel.log 2>/dev/null | tail -30 || echo "Pas de log disponible"
+
+# ✅ 12. Démarrer Supervisor
 echo "==> Démarrage de Supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
