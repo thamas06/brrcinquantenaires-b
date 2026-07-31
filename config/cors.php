@@ -9,10 +9,11 @@ return [
         'https://thamas06.github.io',
         'https://thamas06.github.io/brrcinquantenaires',
         'https://brrcinquantenaires-b-1.onrender.com',
+        'https://brrcinquantenaires-b-87z2.onrender.com',
     ],
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => ['.*'],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 0,
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 ];
